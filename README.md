@@ -9,6 +9,8 @@ Copy the contents of this repo to your target host
 
 ## How to run
 
+### To build images and run containers with docker-compose
+
 ```hcl 
 cd docker-compose_db_replication
 docker-compose up -d
