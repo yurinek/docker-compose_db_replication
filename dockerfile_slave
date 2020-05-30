@@ -1,0 +1,45 @@
+# set default var value for FROM clause
+ARG  PG_VERSION_PULL=latest
+
+FROM postgres:${PG_VERSION_PULL}
+# dont use ARG  PG_VERSION because its reserved as env variable of postgres in the source image
+
+# set same var again - for outside of FROM 
+ARG  PG_VERSION_PULL
+ARG  PG_DB
+ARG  PG_CLUSTER_NAME
+ARG  PG_PORT
+ARG  PG_PASSWORD
+ARG  MASTER_HOST
+
+WORKDIR /tmp
+
+COPY replicate.sh /replicate.sh
+
+# create slave db cluster configuration
+
+RUN mkdir -p /data/postgresql/$PG_VERSION_PULL/$PG_CLUSTER_NAME && \
+chown -R postgres. /data/postgresql/$PG_VERSION_PULL/$PG_CLUSTER_NAME && \
+su postgres -c "/usr/bin/pg_createcluster -p $PG_PORT -d /data/postgresql/$PG_VERSION_PULL/$PG_CLUSTER_NAME $PG_VERSION_PULL $PG_CLUSTER_NAME" && \
+rm -rf /data/postgresql/$PG_VERSION_PULL/$PG_CLUSTER_NAME/ && \
+mkdir /data/postgresql/$PG_VERSION_PULL/$PG_CLUSTER_NAME/ && \
+chown -R postgres. /data/postgresql/$PG_VERSION_PULL/$PG_CLUSTER_NAME/ && \
+chmod -R og-rwx /data/postgresql/$PG_VERSION_PULL/$PG_CLUSTER_NAME/ && \
+chmod u+x /replicate.sh
+
+
+# you can not use ARG in ENTRYPOINT. However you can use your ARG as a value for ENV and use ENV in ENTRYPOINT
+# ARG is only available during the build of a Docker image (RUN etc), not after the image is created and containers are started from it (ENTRYPOINT, CMD)
+# alternative to the below - use in docker-compose.yml environment: - env_var value
+ENV RUNTIME_ENV_PG_VERSION_PULL=$PG_VERSION_PULL
+ENV RUNTIME_ENV_PG_CLUSTER_NAME=$PG_CLUSTER_NAME
+ENV RUNTIME_ENV_PG_PORT=$PG_PORT
+ENV RUNTIME_ENV_PG_DB=$PG_DB
+# lets keep master db host name variable
+ENV RUNTIME_ENV_MASTER_HOST=$MASTER_HOST
+# official source postgres image expects a var named POSTGRES_PASSWORD
+ENV POSTGRES_PASSWORD=$PG_PASSWORD
+
+# use entrypoint to start a process when container starts.
+# note: container keeps running only as long as entrypoint process runs (for docker-compose additionally tty: true required)
+ENTRYPOINT /bin/bash -c "/replicate.sh"

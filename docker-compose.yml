@@ -1,0 +1,76 @@
+# docker-compose.yml version
+version: '3'
+
+services:
+  master:
+    build:
+      # dockerfile path is in same dir
+      context: .
+      # only if file name is other then Dockerfile
+      dockerfile: dockerfile_master
+      # Add build arguments, which are accessible only during the build process from dockerfile
+      args:
+        PG_VERSION_PULL: $ENV_PG_VERSION_PULL
+        PG_DB: $ENV_PG_DB
+        PG_CLUSTER_NAME: $ENV_PG_CLUSTER_NAME
+        PG_PORT: $ENV_PG_PORT
+        PG_PASSWORD: $ENV_POSTGRES_PASSWORD
+    # store image under this name:tag
+    image: yurinek/postgres_master:${ENV_PG_VERSION_PULL}
+    # doesnt need to expose port as db is reachable via network on default port 5432
+    # normally service name isnt equal container name, _1 , _2 suffixes will be appended to make this yml be reusable with multiple containers
+    # we need the exact container name for slave to be able to connect
+    container_name: "${COMPOSE_PROJECT_NAME}_master"
+    volumes:
+      - master_vol:/data/postgresql/$ENV_PG_VERSION_PULL/$ENV_PG_CLUSTER_NAME
+    networks: 
+      - net
+    tty: true
+
+
+  slave:
+    build:
+      # dockerfile path is in same dir
+      context: .
+      # only if file name is other then Dockerfile
+      dockerfile: dockerfile_slave
+      # Add build arguments, which are accessible only during the build process from dockerfile
+      args:
+        PG_VERSION_PULL: $ENV_PG_VERSION_PULL
+        PG_DB: $ENV_PG_DB
+        PG_CLUSTER_NAME: $ENV_PG_CLUSTER_NAME
+        PG_PORT: $ENV_PG_PORT
+        PG_PASSWORD: $ENV_POSTGRES_PASSWORD
+        MASTER_HOST: "${COMPOSE_PROJECT_NAME}_master"
+    # store image under this name:tag
+    image: yurinek/postgres_slave:${ENV_PG_VERSION_PULL}
+    # doesnt need to expose port as db is reachable via network on default port 5432
+    # normally service name isnt equal container name, _1 , _2 suffixes will be appended to make this yml be reusable with multiple containers
+    # we need the exact container name for slave to be able to connect
+    container_name: ${COMPOSE_PROJECT_NAME}_slave
+    volumes:
+      - slave_vol:/data/postgresql/$ENV_PG_VERSION_PULL/$ENV_PG_CLUSTER_NAME
+    networks: 
+      - net
+    tty: true
+    # In the docker-compose mode, docker tries to start all the container in detached mode by default. If there is no process running inside the container within certain duration, docker thinks the container has finished its work and exits it. If this is not a foreground but a background process, docker thinks the foreground process has finished and exits the container. Docker-compose does not support –t as a command line parameter but docker-compose.yml provides "tty: true".
+
+ 
+# volumes, networks name is inherited and prepended from project name
+  
+volumes:
+    master_vol:
+    slave_vol:
+
+networks: 
+    net:
+
+# whats happening:
+  # 1. intermidiate master container is created
+  # 2. master image is created from intermidiate container
+  # 3. intermidiate slave container is created
+  # 4. slave image is created from intermidiate container  
+  # 5. master container is created from image and keeps running with the help of tty: true
+  # 6. slave  container is created from image and keeps running with the help of tty: true   
+  # 7. replication script starts on slave container 
+# these steps can run simultaniously, therefore its important to implement wait logic e.g. slave container should wait for master to be up and ready
