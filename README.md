@@ -10,6 +10,7 @@ Copy the contents of this repo to your target host
 ## How to run
 
 ```hcl 
+cd docker-compose_db_replication
 docker-compose up -d
 ```
 
@@ -20,7 +21,7 @@ docker-compose down -v --remove-orphans --rmi all
 docker-compose up -d --build
 ```
 
-To create containers with different project name<br>
+#### To create containers with different project name<br>
 Edit .env to change project name <br>
 If image already built, because env var of the previous project name is stored in the image, it needs to be rebuild
 
@@ -60,10 +61,11 @@ docker run -dit --name=postgres_slave \
 yurinek/postgres_slave:12
 ```
 
-To customize PG_VERSION_PULL and PG_CLUSTER_NAME the image needs to be rebuild. Its not possible to customize it on container run. <br>
+#### To customize PG_VERSION_PULL and PG_CLUSTER_NAME 
+The image needs to be rebuild. Its not possible to customize it on container run. <br>
 Change the values in .env file and rebuild.<br><br>
 
-To customize db, password (needs to be the same in master and slave) and master host name
+#### To customize db, password (needs to be the same in master and slave) and master host name
 
 ```hcl
 export RUNTIME_ENV_PG_DB=yourdb
