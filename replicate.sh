@@ -7,6 +7,12 @@ else
     RUNTIME_ENV_MASTER_HOST=postgres_master
 fi
 
+# for connections from host
+echo "host all         postgres   samenet md5" >> /etc/postgresql/$RUNTIME_ENV_PG_VERSION_PULL/$RUNTIME_ENV_PG_CLUSTER_NAME/pg_hba.conf
+# in case slave becomes master
+echo "host replication replicator samenet md5" >> /etc/postgresql/$RUNTIME_ENV_PG_VERSION_PULL/$RUNTIME_ENV_PG_CLUSTER_NAME/pg_hba.conf
+chown postgres. /etc/postgresql/$RUNTIME_ENV_PG_VERSION_PULL/$RUNTIME_ENV_PG_CLUSTER_NAME/pg_hba.conf
+
 # dont use "su -" to keep roots env
 su postgres -c 'echo "*:*:*:*:${POSTGRES_PASSWORD}" >> ~/.pgpass'
 su postgres -c 'chmod go-rw ~/.pgpass'
