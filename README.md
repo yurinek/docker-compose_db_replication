@@ -1,6 +1,6 @@
 # docker-compose_db_replication
 
-This is a prove of concept for creation of Postgres Database Master-Slave-Replication in different Docker containers on the same host using docker-compose.<br>
+This project creates Postgres Database Master-Slave-Replication in different Docker containers on the same host using docker-compose.<br>
 It will build one master and one slave db image and create containers with ready to use db replication based on Postgres 12.
 
 ## How to install
